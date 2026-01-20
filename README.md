@@ -1,5 +1,8 @@
 # 🎯 InsightX - Analytics Dashboard
 
+GO Live Preview : https://eslamarafa-dev.github.io/insightx-analytics-dashboard/
+
+
 A premium, real-time analytics dashboard built with **pure Vanilla JavaScript** (no frameworks, no chart libraries). InsightX helps teams visualize and understand operational data clearly with a modern, performance-conscious UI.
 
 ![InsightX Dashboard](https://img.shields.io/badge/InsightX-Analytics%20Dashboard-blue?style=for-the-badge&logo=analytics)
