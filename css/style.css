@@ -1,0 +1,238 @@
+/* 
+ * InsightX Analytics Dashboard - Custom CSS
+ * Minimal, clean styles that complement Tailwind
+ */
+
+:root {
+    --primary-color: #3b82f6; /* blue-600 */
+    --primary-light: #dbeafe; /* blue-100 */
+    --success-color: #10b981; /* green-600 */
+    --warning-color: #f59e0b; /* amber-500 */
+    --danger-color: #ef4444; /* red-600 */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-800: #1f2937;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Selection color */
+::selection {
+    background-color: var(--primary-light);
+    color: var(--gray-800);
+}
+
+/* Smooth transitions for interactive elements */
+a, button, input, select {
+    transition: all 0.15s ease-in-out;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Custom utilities */
+.text-gradient {
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Chart bar styling */
+.chart-bar {
+    transition: height 0.5s ease-in-out;
+    position: relative;
+}
+
+.chart-bar:hover::after {
+    content: attr(data-value);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gray-800);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.chart-bar:hover::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--gray-800);
+}
+
+/* Category distribution bars */
+.category-bar {
+    transition: width 0.8s ease-in-out;
+}
+
+/* Loading animation */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .mobile-stack {
+        flex-direction: column !important;
+    }
+    
+    .mobile-full-width {
+        width: 100% !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .card-hover:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Custom animations for dashboard elements */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.5s ease-out;
+}
+
+/* Status indicator dots */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.status-dot.active {
+    background-color: var(--success-color);
+}
+
+.status-dot.inactive {
+    background-color: var(--danger-color);
+}
+
+.status-dot.pending {
+    background-color: var(--warning-color);
+}
+
+/* Data table row hover effect */
+.data-table tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--gray-50);
+}
+
+/* Custom tooltip */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:hover::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gray-800);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 100;
+    margin-bottom: 8px;
+}
+
+[data-tooltip]:hover::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--gray-800);
+    z-index: 100;
+    margin-bottom: 2px;
+}

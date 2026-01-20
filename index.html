@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InsightX — Analytics Dashboard</title>
+  <meta name="description" content="InsightX is a data-driven analytics dashboard to visualize operational metrics with dynamic filters, real-time counters, and performance-conscious UI updates." />
+
+  <!-- Tailwind CSS via CDN (utility-only; UI logic is pure Vanilla JS) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+  <style>
+    /*
+      InsightX — UI/UX Refresh
+      ---------------------------------
+      Goals:
+      - Minimal analytics style + high readability
+      - Subtle accent color + premium feel (glass + gradients)
+      - Performance conscious DOM updates (state-driven, fragment rendering)
+      - No chart libraries (pure JS rendering)
+
+      NOTE: Tailwind handles layout utilities; this CSS provides theme + micro-interactions.
+    */
+
+    :root {
+      --bg: #f7f8fc;
+      --surface: rgba(255, 255, 255, 0.72);
+      --surface-solid: #ffffff;
+      --surface-2: rgba(255, 255, 255, 0.9);
+      --text: #0b1220;
+      --muted: #5b6b83;
+      --border: rgba(148, 163, 184, 0.35);
+      --shadow: 0 16px 38px rgba(2, 6, 23, 0.10);
+      --shadow-soft: 0 10px 22px rgba(2, 6, 23, 0.08);
+      --accent: #2563eb;
+      --accent-2: #14b8a6;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --ring: rgba(37, 99, 235, 0.30);
+    }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 15% 10%, rgba(37, 99, 235, 0.14), transparent 50%),
+                  radial-gradient(900px 500px at 85% 15%, rgba(20, 184, 166, 0.12), transparent 55%),
+                  radial-gradient(900px 600px at 60% 95%, rgba(99, 102, 241, 0.10), transparent 55%),
+                  var(--bg);
+      min-height: 100vh;
+    }
+
+    /* Dark theme */
+    body[data-theme="dark"] {
+      --bg: #070a12;
+      --surface: rgba(17, 24, 39, 0.62);
+      --surface-solid: #0b1220;
+      --surface-2: rgba(17, 24, 39, 0.86);
+      --text: #e5e7eb;
+      --muted: #a7b0c0;
+      --border: rgba(148, 163, 184, 0.18);
+      --shadow: 0 18px 44px rgba(0, 0, 0, 0.40);
+      --shadow-soft: 0 12px 26px rgba(0, 0, 0, 0.32);
+      --ring: rgba(37, 99, 235, 0.40);
+    }
+
+    /* Subtle grid overlay */
+    .bg-grid {
+      position: relative;
+    }
+    .bg-grid::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.10) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.10) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(circle at 50% 20%, rgba(0,0,0,0.70), transparent 55%);
+      opacity: 0.6;
+    }
+    body[data-theme="dark"] .bg-grid::before {
+      opacity: 0.35;
+    }
+
+    /* Glass / surfaces */
+    .glass {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+    }
+    .surface-solid {
+      background: var(--surface-solid);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* Micro-interactions */
+    .lift {
+      transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      will-change: transform;
+    }
+    .lift:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+      border-color: rgba(37, 99, 235, 0.22);
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      box-shadow: 0 10px 24px rgba(2, 6, 23, 0.06);
+      cursor: pointer;
+      transition: all 180ms ease;
+    }
+    body[data-theme="dark"] .btn {
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-soft);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #5b8cff);
+      border-color: rgba(37, 99, 235, 0.45);
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.25);
+    }
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 18px 36px rgba(37, 99, 235, 0.28);
+    }
+    .btn-edit {
+      background: linear-gradient(135deg, var(--accent-2), #14d4bc);
+      border-color: rgba(20, 184, 166, 0.35);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(20, 184, 166, 0.20);
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+    }
+    .btn-edit:hover:not(:disabled) {
+      box-shadow: 0 14px 28px rgba(20, 184, 166, 0.25);
+      transform: translateY(-2px);
+    }
+
+    /* Category chips (visual state) */
+    .chip {
+      user-select: none;
+      transition: transform 160ms ease, filter 160ms ease, opacity 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+    label:has(> input[name="category"]) .chip:hover {
+      transform: translateY(-1px);
+    }
+    input[name="category"]:not(:checked) + .chip {
+      background: rgba(148,163,184,0.10) !important;
+      border-color: rgba(148,163,184,0.18) !important;
+      filter: saturate(0.7);
+      opacity: 0.75;
+    }
+
+    /* Focus ring */
+    :focus-visible {
+      outline: 3px solid var(--ring);
+      outline-offset: 2px;
+      border-radius: 12px;
+    }
+
+    /* Animations */
+    .fade-in {
+      animation: fadeIn 420ms ease-out both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .count-up { transition: filter 250ms ease; }
+
+    /* Skeleton loading */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(148,163,184,0.20) 25%, rgba(148,163,184,0.34) 37%, rgba(148,163,184,0.20) 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+      border-radius: 12px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: 0 0; }
+    }
+
+    /* Tooltip for bars */
+    .bar {
+      position: relative;
+      transition: height 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .bar:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: -34px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(2,6,23,0.92);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 20;
+    }
+    body[data-theme="dark"] .bar:hover::after {
+      background: rgba(229,231,235,0.92);
+      color: #0b1220;
+    }
+
+    /* Toast - positioned at bottom center */
+    .toast {
+      background: rgba(2, 6, 23, 0.88);
+      color: #fff;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(2, 6, 23, 0.25);
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    body[data-theme="dark"] .toast {
+      background: rgba(229,231,235,0.92);
+      color: #0b1220;
+      border-color: rgba(148, 163, 184, 0.25);
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in, .bar, .lift, .btn, .skeleton { animation: none !important; transition: none !important; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(148,163,184,0.15); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.45); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.65); }
+
+    /* Print */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff !important; color: #000 !important; }
+      .glass, .surface-solid { box-shadow: none !important; }
+    }
+
+    /* Table row hover */
+    tbody tr {
+      transition: background-color 150ms ease;
+    }
+    tbody tr:hover {
+      background-color: rgba(148,163,184,0.06);
+    }
+    body[data-theme="dark"] tbody tr:hover {
+      background-color: rgba(148,163,184,0.08);
+    }
+  </style>
+</head>
+
+<body class="bg-grid">
+
+  <a class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[999] btn px-4 py-2 rounded-xl" href="#main">
+    Skip to content
+  </a>
+
+  <div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="no-print sticky top-0 z-40">
+      <div class="glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 14px 30px rgba(37,99,235,0.20);">
+                <span class="text-white font-bold text-lg">IX</span>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <h1 class="text-lg sm:text-xl font-semibold tracking-tight truncate">InsightX</h1>
+                  <span class="hidden sm:inline-flex text-xs px-2 py-1 rounded-full" style="background: rgba(20,184,166,0.12); color: var(--text); border: 1px solid rgba(20,184,166,0.20);">Operational Analytics</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs" style="color: var(--muted);">
+                  <span class="inline-flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" id="status-dot" style="background: var(--success);"></span>
+                    <span>Last updated:</span>
+                    <span id="last-updated">Just now</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="mobile-filters-btn" class="btn lift lg:hidden px-3 py-2 rounded-xl" title="Filters">
+                <i class="fa-solid fa-sliders"></i>
+              </button>
+
+              <button id="theme-toggle" class="btn lift px-3 py-2 rounded-xl" title="Toggle theme" aria-pressed="false">
+                <i class="fa-solid fa-moon" id="theme-icon"></i>
+              </button>
+
+              <button id="help-btn" class="btn lift px-3 py-2 rounded-xl" title="Help">
+                <i class="fa-regular fa-circle-question"></i>
+              </button>
+
+              <button id="refresh-btn" class="btn-primary lift px-4 py-2 rounded-xl flex items-center gap-2">
+                <i class="fas fa-sync-alt"></i>
+                <span class="hidden sm:inline">Refresh</span>
+              </button>
+
+              <div class="hidden md:flex items-center gap-2">
+                <button id="export-btn" class="btn lift px-4 py-2 rounded-xl flex items-center gap-2" title="Export current page to CSV">
+                  <i class="fa-solid fa-file-export"></i>
+                  <span>Export</span>
+                </button>
+              </div>
+
+              <div class="hidden sm:flex items-center gap-2 pl-1">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center" style="background: rgba(148,163,184,0.16); border: 1px solid var(--border);">
+                  <i class="fas fa-user" style="color: var(--muted);"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main id="main" class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
+      <!-- Top row: title + search -->
+      <section class="fade-in mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">Overview</h2>
+            <p class="mt-1" style="color: var(--muted);">A clean, real-time feel—powered by state-driven updates and realistic simulated data.</p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2" style="color: var(--muted);"></i>
+              <input id="search" type="search" placeholder="Search activity (user, action, category)…" class="w-full sm:w-[420px] pl-11 pr-4 py-3 rounded-2xl glass" style="outline: none; color: var(--text); background-color: var(--surface-2);" />
+            </div>
+            <div class="flex gap-2">
+              <button id="clear-search" class="btn lift px-4 py-3 rounded-2xl" title="Clear search">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+              <button id="export-btn-sm" class="btn lift px-4 py-3 rounded-2xl md:hidden" title="Export current page to CSV">
+                <i class="fa-solid fa-file-export"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Sidebar (desktop) -->
+        <aside class="hidden lg:block lg:col-span-1">
+          <div class="glass rounded-3xl p-6 fade-in lg:sticky lg:top-24">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Filters</h3>
+              <span id="filters-pill" class="text-xs px-2 py-1 rounded-full" style="background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.18); color: var(--text);">Live</span>
+            </div>
+
+            <div class="mt-6">
+              <label class="text-sm font-medium" style="color: var(--muted);">Date range</label>
+              <select id="date-range" class="mt-2 w-full rounded-2xl px-4 py-3" style="background: var(--surface-2); border: 1px solid var(--border); color: var(--text);">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week" selected>This week</option>
+                <option value="month">This month</option>
+                <option value="quarter">This quarter</option>
+                <option value="year">This year</option>
+              </select>
+            </div>
+
+            <div class="mt-6">
+              <div class="flex items-center justify-between">
+                <label class="text-sm font-medium" style="color: var(--muted);">Category</label>
+                <button id="select-all" class="text-xs underline" style="color: var(--muted);">Select all</button>
+              </div>
+
+              <div class="mt-3 flex flex-wrap gap-2">
+                <label class="cursor-pointer">
+                  <input class="sr-only" type="checkbox" name="category" value="sales" checked />
+                  <span class="chip inline-flex items-center gap-2 px-3 py-2 rounded-2xl" data-chip="sales" style="background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.20);">
+                    <span class="w-2 h-2 rounded-full" style="background: #3b82f6;"></span>
+                    <span class="text-sm">Sales</span>
+                  </span>
+                </label>
+                <label class="cursor-pointer">
+                  <input class="sr-only" type="checkbox" name="category" value="marketing" checked />
+                  <span class="chip inline-flex items-center gap-2 px-3 py-2 rounded-2xl" data-chip="marketing" style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.20);">
+                    <span class="w-2 h-2 rounded-full" style="background: #10b981;"></span>
+                    <span class="text-sm">Marketing</span>
+                  </span>
+                </label>
+                <label class="cursor-pointer">
+                  <input class="sr-only" type="checkbox" name="category" value="operations" checked />
+                  <span class="chip inline-flex items-center gap-2 px-3 py-2 rounded-2xl" data-chip="operations" style="background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.20);">
+                    <span class="w-2 h-2 rounded-full" style="background: #a855f7;"></span>
+                    <span class="text-sm">Operations</span>
+                  </span>
+                </label>
+                <label class="cursor-pointer">
+                  <input class="sr-only" type="checkbox" name="category" value="support" checked />
+                  <span class="chip inline-flex items-center gap-2 px-3 py-2 rounded-2xl" data-chip="support" style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.22);">
+                    <span class="w-2 h-2 rounded-full" style="background: #f59e0b;"></span>
+                    <span class="text-sm">Support</span>
+                  </span>
+                </label>
+              </div>
+
+              <p class="mt-3 text-xs" style="color: var(--muted);">Tip: uncheck categories to focus the dashboard.</p>
+            </div>
+
+            <div class="mt-6 grid grid-cols-2 gap-3">
+              <button id="apply-filters" class="btn-primary lift px-4 py-3 rounded-2xl font-medium">Apply</button>
+              <button id="reset-filters" class="btn lift px-4 py-3 rounded-2xl font-medium">Reset</button>
+            </div>
+
+            <div class="mt-8 pt-6" style="border-top: 1px solid var(--border);">
+              <h4 class="text-sm font-semibold">Quick stats</h4>
+              <div class="mt-3 space-y-3 text-sm" style="color: var(--muted);">
+                <div class="flex items-center justify-between"><span>Data points</span><span id="quick-data-points" style="color: var(--text);" class="font-semibold">—</span></div>
+                <div class="flex items-center justify-between"><span>Active users</span><span id="quick-active-users" style="color: var(--text);" class="font-semibold">—</span></div>
+                <div class="flex items-center justify-between"><span>Avg. session</span><span id="quick-avg-session" style="color: var(--text);" class="font-semibold">—</span></div>
+                <div class="flex items-center justify-between"><span>Completion</span><span id="quick-completion" style="color: var(--text);" class="font-semibold">—</span></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Content -->
+        <section class="lg:col-span-3">
+          <!-- KPI cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+            <article class="surface-solid rounded-3xl p-6 lift fade-in" style="background: linear-gradient(180deg, rgba(37,99,235,0.10), transparent 40%), var(--surface-solid);">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm" style="color: var(--muted);">Total revenue</p>
+                  <div class="mt-2 flex items-end gap-3">
+                    <h3 class="text-3xl font-semibold tracking-tight count-up" id="total-revenue">$0</h3>
+                    <span class="text-xs px-2 py-1 rounded-full" id="rev-delta" style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.20); color: var(--text);">—</span>
+                  </div>
+                </div>
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background: rgba(37,99,235,0.14); border: 1px solid rgba(37,99,235,0.20);">
+                  <i class="fa-solid fa-dollar-sign" style="color: var(--accent);"></i>
+                </div>
+              </div>
+              <div class="mt-4">
+                <svg id="spark-revenue" viewBox="0 0 120 30" class="w-full h-8" aria-label="Revenue sparkline" role="img"></svg>
+              </div>
+              <p class="mt-2 text-xs" style="color: var(--muted);">Simulated trend across the selected window.</p>
+            </article>
+
+            <article class="surface-solid rounded-3xl p-6 lift fade-in" style="background: linear-gradient(180deg, rgba(16,185,129,0.10), transparent 40%), var(--surface-solid);">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm" style="color: var(--muted);">Active users</p>
+                  <div class="mt-2 flex items-end gap-3">
+                    <h3 class="text-3xl font-semibold tracking-tight count-up" id="active-users">0</h3>
+                    <span class="text-xs px-2 py-1 rounded-full" id="users-delta" style="background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.18); color: var(--text);">—</span>
+                  </div>
+                </div>
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.20);">
+                  <i class="fa-solid fa-users" style="color: var(--success);"></i>
+                </div>
+              </div>
+              <div class="mt-4">
+                <svg id="spark-users" viewBox="0 0 120 30" class="w-full h-8" aria-label="Users sparkline" role="img"></svg>
+              </div>
+              <p class="mt-2 text-xs" style="color: var(--muted);">Engagement proxy for operational usage.</p>
+            </article>
+
+            <article class="surface-solid rounded-3xl p-6 lift fade-in" style="background: linear-gradient(180deg, rgba(168,85,247,0.10), transparent 40%), var(--surface-solid);">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm" style="color: var(--muted);">Conversion rate</p>
+                  <div class="mt-2 flex items-end gap-3">
+                    <h3 class="text-3xl font-semibold tracking-tight count-up" id="conversion-rate">0%</h3>
+                    <span class="text-xs px-2 py-1 rounded-full" id="conv-delta" style="background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.18); color: var(--text);">—</span>
+                  </div>
+                </div>
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background: rgba(168,85,247,0.14); border: 1px solid rgba(168,85,247,0.20);">
+                  <i class="fa-solid fa-percent" style="color: #a855f7;"></i>
+                </div>
+              </div>
+              <div class="mt-4">
+                <svg id="spark-conv" viewBox="0 0 120 30" class="w-full h-8" aria-label="Conversion sparkline" role="img"></svg>
+              </div>
+              <p class="mt-2 text-xs" style="color: var(--muted);">Contextual and filter-sensitive metric.</p>
+            </article>
+          </div>
+
+          <!-- Insights -->
+          <section id="insights" class="glass rounded-3xl p-6 fade-in mb-6" aria-live="polite">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-lg font-semibold">Insights</h3>
+                <p class="mt-1 text-sm" style="color: var(--muted);">Auto-generated highlights based on current filters & signals.</p>
+              </div>
+              <button id="dismiss-insights" class="btn lift px-3 py-2 rounded-2xl" title="Dismiss">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div id="insights-list" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            </div>
+          </section>
+
+          <!-- Visualizations -->
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+            <section class="glass rounded-3xl p-6 fade-in">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-semibold">Performance trend</h3>
+                  <p class="text-sm mt-1" style="color: var(--muted);">No libraries—bars are rendered via DOM updates.</p>
+                </div>
+                <select id="trend-granularity" class="rounded-2xl px-4 py-2" style="background: var(--surface-2); border: 1px solid var(--border); color: var(--text);">
+                  <option value="weekly" selected>Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </div>
+
+              <div class="mt-6">
+                <div class="h-64 flex items-end justify-between gap-2" id="chart-container" aria-label="Performance bars" role="img">
+                  <div class="text-sm" style="color: var(--muted);">Loading…</div>
+                </div>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between text-xs" style="color: var(--muted);">
+                <span>Hover bars to see values.</span>
+                <span id="chart-meta">—</span>
+              </div>
+            </section>
+
+            <section class="glass rounded-3xl p-6 fade-in">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-lg font-semibold">Category distribution</h3>
+                  <p class="text-sm mt-1" style="color: var(--muted);">Proportional breakdown for quick operational focus.</p>
+                </div>
+                <div class="text-sm font-semibold" id="total-items">—</div>
+              </div>
+
+              <div id="category-distribution" class="mt-6 space-y-4">
+                <div class="text-sm" style="color: var(--muted);">Loading…</div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Activity table -->
+          <section class="glass rounded-3xl p-6 fade-in">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-semibold">Recent activity</h3>
+                <p class="text-sm mt-1" style="color: var(--muted);">Filter-aware log with pagination and export.</p>
+              </div>
+              <div class="text-sm" style="color: var(--muted);">
+                Showing <span id="shown-activities" style="color: var(--text);" class="font-semibold">0</span>
+                of <span id="total-activities" style="color: var(--text);" class="font-semibold">0</span>
+              </div>
+            </div>
+
+            <div class="mt-4 overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="text-left text-sm" style="color: var(--muted); border-bottom: 1px solid var(--border);">
+                    <th class="pb-3 font-medium">User</th>
+                    <th class="pb-3 font-medium">Action</th>
+                    <th class="pb-3 font-medium">Category</th>
+                    <th class="pb-3 font-medium">Value</th>
+                    <th class="pb-3 font-medium">Time</th>
+                    <th class="pb-3 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="activity-table">
+                  <tr>
+                    <td colspan="5" class="py-10 text-center" style="color: var(--muted);">Loading activity…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-6 flex items-center justify-between gap-3">
+              <div class="text-xs" style="color: var(--muted);">
+                Page <span id="page-num" style="color: var(--text);" class="font-semibold">1</span>
+                of <span id="page-total" style="color: var(--text);" class="font-semibold">1</span>
+              </div>
+              <div class="flex gap-2">
+                <button id="prev-page" class="btn lift px-4 py-2 rounded-2xl" disabled>Previous</button>
+                <button id="next-page" class="btn lift px-4 py-2 rounded-2xl" disabled>Next</button>
+              </div>
+            </div>
+          </section>
+        </section>
+      </div>
+
+      <p class="mt-8 text-xs" style="color: var(--muted);">
+        Note: All data is simulated for demonstration; interactions mimic realistic dashboard behavior.
+      </p>
+    </main>
+
+    <!-- Footer -->
+    <footer class="no-print mt-10 py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="glass rounded-3xl px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="text-sm" style="color: var(--muted);">
+            InsightX &copy; <span id="current-year"></span> — UI updates without page reload.
+          </div>
+          <div class="text-sm" style="color: var(--muted);">
+            Built with HTML / CSS / Vanilla JS (no chart libraries) Developed by Eslam Arafa.
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Mobile Filters Drawer -->
+  <div id="mobile-filters" class="no-print fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="absolute inset-0" style="background: rgba(2,6,23,0.55);"></div>
+    <div class="absolute right-0 top-0 h-full w-full max-w-md glass rounded-l-3xl p-6 overflow-y-auto">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="text-lg font-semibold">Filters</h3>
+          <p class="text-sm mt-1" style="color: var(--muted);">Tune the dashboard without reloading.</p>
+        </div>
+        <button id="close-mobile-filters" class="btn lift px-3 py-2 rounded-2xl" title="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="mt-6">
+        <label class="text-sm font-medium" style="color: var(--muted);">Date range</label>
+        <select id="date-range-mobile" class="mt-2 w-full rounded-2xl px-4 py-3" style="background: var(--surface-2); border: 1px solid var(--border); color: var(--text);">
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="week" selected>This week</option>
+          <option value="month">This month</option>
+          <option value="quarter">This quarter</option>
+          <option value="year">This year</option>
+        </select>
+      </div>
+
+      <div class="mt-6">
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium" style="color: var(--muted);">Category</label>
+          <button id="select-all-mobile" class="text-xs underline" style="color: var(--muted);">Select all</button>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2" id="mobile-category-chips">
+        </div>
+      </div>
+
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <button id="apply-filters-mobile" class="btn-primary lift px-4 py-3 rounded-2xl font-medium">Apply</button>
+        <button id="reset-filters-mobile" class="btn lift px-4 py-3 rounded-2xl font-medium">Reset</button>
+      </div>
+
+      <div class="mt-8 pt-6" style="border-top: 1px solid var(--border);">
+        <h4 class="text-sm font-semibold">Quick stats</h4>
+        <div class="mt-3 space-y-3 text-sm" style="color: var(--muted);">
+          <div class="flex items-center justify-between"><span>Data points</span><span id="quick-data-points-mobile" style="color: var(--text);" class="font-semibold">—</span></div>
+          <div class="flex items-center justify-between"><span>Active users</span><span id="quick-active-users-mobile" style="color: var(--text);" class="font-semibold">—</span></div>
+          <div class="flex items-center justify-between"><span>Avg. session</span><span id="quick-avg-session-mobile" style="color: var(--text);" class="font-semibold">—</span></div>
+          <div class="flex items-center justify-between"><span>Completion</span><span id="quick-completion-mobile" style="color: var(--text);" class="font-semibold">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="no-print fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="absolute inset-0" style="background: rgba(2,6,23,0.55);"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="glass rounded-3xl max-w-lg w-full p-6 sm:p-8 fade-in" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 id="edit-title" class="text-xl font-semibold">Edit Activity</h3>
+            <p class="mt-1 text-sm" style="color: var(--muted);">Modify activity details and save changes.</p>
+          </div>
+          <button id="close-edit" class="btn lift px-3 py-2 rounded-2xl" title="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <form id="edit-form" class="mt-6 space-y-4">
+          <input type="hidden" id="edit-id" />
+          
+          <div>
+            <label class="text-sm font-medium" style="color: var(--muted);">User</label>
+            <input type="text" id="edit-user" class="mt-2 w-full rounded-2xl px-4 py-3" style="background: var(--surface-2); border: 1px solid var(--border); color: var(--text);" required />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium" style="color: var(--muted);">Action</label>
+            <select id="edit-action" class="mt-2 w-full rounded-2xl px-4 py-3" style="background: var(--surface-2); border: 1px solid var(--border); color: var(--text);" required>
+              <option value="Login">Login</option>
+              <option value="Purchase">Purchase</option>
+              <option value="Download">Download</option>
+              <option value="Upload">Upload</option>
+              <option value="Comment">Comment</option>
+              <option value="Share">Share</option>
+              <option value="View">View</option>
+              <option value="Approve">Approve</option>
+              <option value="Resolve">Resolve</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium" style="color: var(--muted);">Category</label>
+            <select id="edit-category" class="mt-2 w-full rounded-2xl px-4 py-3" style="background: var(--surface-2); border: 1px solid var(--border); color: var(--text);" required>
+              <option value="Sales">Sales</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Operations">Operations</option>
+              <option value="Support">Support</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium" style="color: var(--muted);">Value</label>
+            <input type="text" id="edit-value" class="mt-2 w-full rounded-2xl px-4 py-3" style="background: var(--surface-2); border: 1px solid var(--border); color: var(--text);" required />
+          </div>
+
+          <div class="mt-6 grid grid-cols-2 gap-3">
+            <button type="submit" class="btn-primary lift px-4 py-3 rounded-2xl font-medium">
+              <i class="fa-solid fa-check mr-2"></i>Save Changes
+            </button>
+            <button type="button" id="cancel-edit" class="btn lift px-4 py-3 rounded-2xl font-medium">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="no-print fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="absolute inset-0" style="background: rgba(2,6,23,0.55);"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="glass rounded-3xl max-w-2xl w-full p-6 sm:p-8 fade-in" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 id="help-title" class="text-xl font-semibold">How InsightX works</h3>
+            <p class="mt-1 text-sm" style="color: var(--muted);">A quick guide to the data flow and UI logic.</p>
+          </div>
+          <button id="close-help" class="btn lift px-3 py-2 rounded-2xl" title="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="surface-solid rounded-3xl p-5">
+            <h4 class="font-semibold">State-driven UI</h4>
+            <p class="mt-2 text-sm" style="color: var(--muted);">
+              All UI derives from a single in-memory object (<code>DashboardState</code>). Filters update the state, then render() updates only the needed DOM nodes.
+            </p>
+          </div>
+          <div class="surface-solid rounded-3xl p-5">
+            <h4 class="font-semibold">Performance-conscious rendering</h4>
+            <p class="mt-2 text-sm" style="color: var(--muted);">
+              Lists use <code>DocumentFragment</code>, counters animate via <code>requestAnimationFrame</code>, and rendering is batched.
+            </p>
+          </div>
+          <div class="surface-solid rounded-3xl p-5">
+            <h4 class="font-semibold">No chart libraries</h4>
+            <p class="mt-2 text-sm" style="color: var(--muted);">
+              The trend bars are simple divs, and sparklines are tiny inline SVG paths built with pure JS.
+            </p>
+          </div>
+          <div class="surface-solid rounded-3xl p-5">
+            <h4 class="font-semibold">Keyboard shortcuts</h4>
+            <ul class="mt-2 text-sm" style="color: var(--muted);">
+              <li><kbd class="px-2 py-1 rounded-xl" style="background: rgba(148,163,184,0.18); border: 1px solid var(--border);">Ctrl/Cmd + R</kbd> Refresh</li>
+              <li class="mt-2"><kbd class="px-2 py-1 rounded-xl" style="background: rgba(148,163,184,0.18); border: 1px solid var(--border);">Ctrl/Cmd + F</kbd> Focus search</li>
+              <li class="mt-2"><kbd class="px-2 py-1 rounded-xl" style="background: rgba(148,163,184,0.18); border: 1px solid var(--border);">Esc</kbd> Close modals</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style="border-top: 1px solid var(--border); padding-top: 16px;">
+          <p class="text-sm" style="color: var(--muted);">All data is simulated for demo. The UI behaves like a real dashboard.</p>
+          <button id="got-it" class="btn-primary lift px-5 py-3 rounded-2xl font-medium">Got it</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript - Full Dashboard Logic -->
+  <script>
+    /*
+      InsightX — Complete Vanilla JS Dashboard
+      ========================================
+      Architecture:
+      - DashboardState: single source of truth
+      - generateData(): realistic mock data
+      - computeViews(): apply filters/search
+      - render(): update UI with small targeted functions
+      - RAF scheduler: batch DOM updates
+    */
+
+    const DashboardState = {
+      filters: {
+        dateRange: 'week',
+        categories: new Set(['sales', 'marketing', 'operations', 'support'])
+      },
+      ui: {
+        isLoading: false,
+        lastUpdated: new Date(),
+        searchTerm: '',
+        theme: 'light',
+        insightsDismissed: false,
+        granularity: 'weekly'
+      },
+      data: {
+        summary: {
+          totalRevenue: 0,
+          activeUsers: 0,
+          conversionRate: 0,
+          dataPoints: 0,
+          avgSession: '—',
+          completionRate: 0,
+          revenueDeltaPct: 0,
+          usersDeltaPct: 0,
+          convDeltaPct: 0
+        },
+        performance: [],
+        categories: [],
+        activities: [],
+        pagination: {
+          currentPage: 1,
+          pageSize: 7,
+          totalItems: 0
+        },
+        view: {
+          filteredActivities: [],
+          pagedActivities: []
+        },
+        sparklines: {
+          revenue: [],
+          users: [],
+          conv: []
+        }
+      }
+    };
+
+    const DOM = {};
+
+    // Utilities
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+    function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+    function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+    function setText(el, value) {
+      const text = String(value);
+      if (el && el.textContent !== text) el.textContent = text;
+    }
+
+    function formatCurrency(value) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+      }).format(value);
+    }
+
+    function prefersReducedMotion() {
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function timeAgo(date) {
+      const diffMs = Date.now() - date.getTime();
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'Just now';
+      if (mins === 1) return '1 minute ago';
+      if (mins < 60) return `${mins} minutes ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours === 1) return '1 hour ago';
+      return `${hours} hours ago`;
+    }
+
+    let renderScheduled = false;
+    function scheduleRender() {
+      if (renderScheduled) return;
+      renderScheduled = true;
+      requestAnimationFrame(() => {
+        renderScheduled = false;
+        render();
+      });
+    }
+
+    // Data Generation
+    function generateData() {
+      const multiplier = {
+        today: 0.15,
+        yesterday: 0.17,
+        week: 1,
+        month: 3.9,
+        quarter: 11.7,
+        year: 52
+      }[DashboardState.filters.dateRange] ?? 1;
+
+      const baseRevenue = 42560;
+      const baseUsers = 1247;
+      const baseConv = 3.4;
+
+      const revenue = Math.floor(baseRevenue * multiplier * rand(0.92, 1.08));
+      const users = Math.floor(baseUsers * multiplier * rand(0.90, 1.10));
+      const conv = clamp(baseConv * rand(0.78, 1.18), 0.6, 9.9);
+
+      DashboardState.data.summary = {
+        totalRevenue: revenue,
+        activeUsers: users,
+        conversionRate: conv,
+        dataPoints: Math.floor(8921 * multiplier * rand(0.9, 1.1)),
+        avgSession: `${randInt(3, 6)}m ${randInt(5, 59)}s`,
+        completionRate: clamp(Math.floor(87 * rand(0.85, 1.06)), 40, 99),
+        revenueDeltaPct: rand(-4.5, 14.5),
+        usersDeltaPct: rand(-3.0, 12.0),
+        convDeltaPct: rand(-4.0, 4.0)
+      };
+
+      const labels = DashboardState.ui.granularity === 'weekly'
+        ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        : DashboardState.ui.granularity === 'monthly'
+          ? Array.from({length: 12}, (_, i) => `W${i+1}`)
+          : ['Q1','Q2','Q3','Q4'];
+
+      const perf = labels.map(label => {
+        const value = Math.floor(rand(55, 160) * rand(0.92, 1.08));
+        return { label, value, trend: Math.random() > 0.5 ? 'up' : 'down' };
+      });
+      DashboardState.data.performance = perf;
+
+      DashboardState.data.categories = [
+        { key: 'sales', name: 'Sales', color: '#3b82f6', value: randInt(30, 55) },
+        { key: 'marketing', name: 'Marketing', color: '#10b981', value: randInt(18, 38) },
+        { key: 'operations', name: 'Operations', color: '#a855f7', value: randInt(10, 26) },
+        { key: 'support', name: 'Support', color: '#f59e0b', value: randInt(6, 18) }
+      ];
+
+      const usersList = ['Alex Johnson', 'Sam Rivera', 'Taylor Chen', 'Jordan Smith', 'Casey Kim', 'Morgan Lee', 'Rana Ahmed', 'Omar Hassan', 'Noura Ali', 'Fatima Noor'];
+      const actions = ['Login', 'Purchase', 'Download', 'Upload', 'Comment', 'Share', 'View', 'Approve', 'Resolve'];
+      const categories = ['Sales', 'Marketing', 'Operations', 'Support'];
+
+      const activityCount = Math.floor(28 * rand(0.85, 1.25));
+      const activities = [];
+      for (let i = 0; i < activityCount; i++) {
+        const user = usersList[randInt(0, usersList.length - 1)];
+        const action = actions[randInt(0, actions.length - 1)];
+        const category = categories[randInt(0, categories.length - 1)];
+        const valueNum = randInt(15, 1400);
+        const value = action === 'Purchase' ? formatCurrency(valueNum) : (Math.random() > 0.6 ? formatCurrency(randInt(10, 500)) : `${randInt(1, 35)} items`);
+        const minsAgo = randInt(2, 720);
+
+        activities.push({
+          id: i + 1,
+          user,
+          action,
+          category,
+          value,
+          minutesAgo: minsAgo,
+          time: minsAgo < 60 ? `${minsAgo} minutes ago` : `${Math.floor(minsAgo / 60)} hours ago`
+        });
+      }
+      activities.sort((a, b) => a.minutesAgo - b.minutesAgo);
+      DashboardState.data.activities = activities;
+
+      DashboardState.data.sparklines = {
+        revenue: makeSeries(24, rand(40, 120), rand(0.8, 1.2)),
+        users: makeSeries(24, rand(30, 110), rand(0.8, 1.25)),
+        conv: makeSeries(24, rand(20, 90), rand(0.85, 1.15))
+      };
+
+      DashboardState.ui.lastUpdated = new Date();
+    }
+
+    function makeSeries(points, base, volatility) {
+      const arr = [];
+      let v = base;
+      for (let i = 0; i < points; i++) {
+        v = clamp(v + rand(-8, 8) * volatility, 10, 180);
+        arr.push(v);
+      }
+      return arr;
+    }
+
+    function computeViews() {
+      const selectedKeys = DashboardState.filters.categories;
+      const search = DashboardState.ui.searchTerm.trim().toLowerCase();
+
+      const allowedCategoryNames = new Set();
+      if (selectedKeys.has('sales')) allowedCategoryNames.add('Sales');
+      if (selectedKeys.has('marketing')) allowedCategoryNames.add('Marketing');
+      if (selectedKeys.has('operations')) allowedCategoryNames.add('Operations');
+      if (selectedKeys.has('support')) allowedCategoryNames.add('Support');
+
+      let filtered = DashboardState.data.activities.filter(a => allowedCategoryNames.has(a.category));
+
+      if (search) {
+        filtered = filtered.filter(a =>
+          a.user.toLowerCase().includes(search) ||
+          a.action.toLowerCase().includes(search) ||
+          a.category.toLowerCase().includes(search) ||
+          String(a.value).toLowerCase().includes(search)
+        );
+      }
+
+      DashboardState.data.view.filteredActivities = filtered;
+
+      const p = DashboardState.data.pagination;
+      p.totalItems = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(p.totalItems / p.pageSize));
+      p.currentPage = clamp(p.currentPage, 1, totalPages);
+
+      const start = (p.currentPage - 1) * p.pageSize;
+      const end = start + p.pageSize;
+      DashboardState.data.view.pagedActivities = filtered.slice(start, end);
+
+      const counts = { Sales: 0, Marketing: 0, Operations: 0, Support: 0 };
+      for (const a of filtered) counts[a.category]++;
+
+      const dist = DashboardState.data.categories
+        .filter(c => selectedKeys.has(c.key))
+        .map(c => ({ ...c, value: counts[c.name] || 0 }));
+
+      const total = dist.reduce((s, c) => s + c.value, 0);
+      if (total === 0) {
+        for (const c of dist) c.value = randInt(2, 10);
+      }
+      DashboardState.data.categories = dist;
+    }
+
+    // Rendering Functions
+    function setLoading(isLoading) {
+      DashboardState.ui.isLoading = isLoading;
+      if (DOM.statusDot) DOM.statusDot.style.background = isLoading ? 'var(--warning)' : 'var(--success)';
+      if (DOM.refreshBtn) {
+        DOM.refreshBtn.disabled = isLoading;
+        DOM.refreshBtn.innerHTML = isLoading
+          ? '<i class="fa-solid fa-spinner fa-spin"></i><span class="hidden sm:inline">Refreshing</span>'
+          : '<i class="fas fa-sync-alt"></i><span class="hidden sm:inline">Refresh</span>';
+      }
+      const kpiEls = [DOM.totalRevenue, DOM.activeUsers, DOM.conversionRate];
+      for (const el of kpiEls) {
+        if (!el) continue;
+        el.style.filter = isLoading ? 'blur(1px)' : 'none';
+      }
+    }
+
+    function render() {
+      computeViews();
+      renderHeader();
+      renderSummary();
+      renderSparklines();
+      renderInsights();
+      renderPerformance();
+      renderCategoryDistribution();
+      renderActivityTable();
+      renderPagination();
+      renderQuickStats();
+    }
+
+    function renderHeader() {
+      setText(DOM.lastUpdated, timeAgo(DashboardState.ui.lastUpdated));
+    }
+
+    function renderSummary() {
+      const s = DashboardState.data.summary;
+      setDeltaPill(DOM.revDelta, s.revenueDeltaPct);
+      setDeltaPill(DOM.usersDelta, s.usersDeltaPct);
+      setDeltaPill(DOM.convDelta, s.convDeltaPct, true);
+
+      DOM.totalRevenue.dataset.target = String(s.totalRevenue);
+      DOM.activeUsers.dataset.target = String(s.activeUsers);
+      DOM.conversionRate.dataset.target = String(s.conversionRate);
+
+      if (prefersReducedMotion()) {
+        setText(DOM.totalRevenue, formatCurrency(s.totalRevenue));
+        setText(DOM.activeUsers, s.activeUsers.toLocaleString());
+        setText(DOM.conversionRate, `${s.conversionRate.toFixed(1)}%`);
+      } else {
+        setText(DOM.totalRevenue, formatCurrency(0));
+        setText(DOM.activeUsers, '0');
+        setText(DOM.conversionRate, '0%');
+      }
+
+      if (!prefersReducedMotion()) animateCounters();
+    }
+
+    function setDeltaPill(el, pct, invertForConversion = false) {
+      if (!el) return;
+      const p = Number(pct);
+      const isUp = p >= 0;
+      const icon = isUp ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+      const color = isUp ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
+      el.style.background = color;
+      el.style.borderColor = isUp ? 'rgba(16,185,129,0.22)' : 'rgba(239,68,68,0.22)';
+      el.innerHTML = `<i class="fa-solid ${icon}"></i> ${Math.abs(p).toFixed(1)}%`;
+    }
+
+    function animateCounters() {
+      const s = DashboardState.data.summary;
+      animateValue(DOM.totalRevenue, 0, s.totalRevenue, 950, v => formatCurrency(v));
+      animateValue(DOM.activeUsers, 0, s.activeUsers, 900, v => Math.floor(v).toLocaleString());
+      animateValue(DOM.conversionRate, 0, s.conversionRate, 900, v => `${v.toFixed(1)}%`);
+    }
+
+    function animateValue(el, start, end, duration, formatter) {
+      if (!el) return;
+      const startTime = performance.now();
+      const diff = end - start;
+
+      function tick(now) {
+        const t = clamp((now - startTime) / duration, 0, 1);
+        const eased = 1 - Math.pow(1 - t, 4);
+        const v = start + diff * eased;
+        el.textContent = formatter(v);
+        if (t < 1) requestAnimationFrame(tick);
+        else el.textContent = formatter(end);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function renderSparklines() {
+      drawSparkline(DOM.sparkRevenue, DashboardState.data.sparklines.revenue, 'rgba(37,99,235,0.35)', 'rgba(37,99,235,0.95)');
+      drawSparkline(DOM.sparkUsers, DashboardState.data.sparklines.users, 'rgba(16,185,129,0.35)', 'rgba(16,185,129,0.95)');
+      drawSparkline(DOM.sparkConv, DashboardState.data.sparklines.conv, 'rgba(168,85,247,0.30)', 'rgba(168,85,247,0.95)');
+    }
+
+    function drawSparkline(svg, series, fill, stroke) {
+      if (!svg) return;
+      const w = 120, h = 30, pad = 2;
+      const min = Math.min(...series);
+      const max = Math.max(...series);
+      const range = Math.max(1, max - min);
+
+      const pts = series.map((v, i) => {
+        const x = pad + (i / (series.length - 1)) * (w - pad * 2);
+        const y = pad + (1 - (v - min) / range) * (h - pad * 2);
+        return [x, y];
+      });
+
+      const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(' ');
+      const area = `${d} L ${pts[pts.length - 1][0].toFixed(2)} ${h - pad} L ${pts[0][0].toFixed(2)} ${h - pad} Z`;
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="g-${svg.id}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${fill}" />
+            <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+          </linearGradient>
+        </defs>
+        <path d="${area}" fill="url(#g-${svg.id})"></path>
+        <path d="${d}" fill="none" stroke="${stroke}" stroke-width="2.4" stroke-linecap="round"></path>
+      `;
+    }
+
+    function renderInsights() {
+      if (DashboardState.ui.insightsDismissed) {
+        DOM.insights.classList.add('hidden');
+        return;
+      }
+      DOM.insights.classList.remove('hidden');
+
+      const s = DashboardState.data.summary;
+      const selected = Array.from(DashboardState.filters.categories);
+      const search = DashboardState.ui.searchTerm.trim();
+      const insights = [];
+
+      if (s.conversionRate < 2.8) {
+        insights.push({
+          tone: 'warn',
+          title: 'Conversion is soft',
+          body: 'Consider narrowing the scope to a single category, then investigate the last-touch actions in the activity log.'
+        });
+      } else {
+        insights.push({
+          tone: 'good',
+          title: 'Conversion looks healthy',
+          body: 'Your current window shows stable conversions—try comparing Weekly vs Monthly for drift.'
+        });
+      }
+
+      if (selected.length <= 2) {
+        insights.push({
+          tone: 'info',
+          title: 'Focused view',
+          body: `You are looking at ${selected.join(' + ')}. Great for root-cause analysis and ops follow-ups.`
+        });
+      } else {
+        insights.push({
+          tone: 'info',
+          title: 'Broad coverage',
+          body: 'Multiple categories are selected. Use the search to isolate a user/action and follow the operational story.'
+        });
+      }
+
+      if (search) {
+        insights.push({
+          tone: 'info',
+          title: 'Search active',
+          body: `Filtered activities by "${search}". Export the current page to share it with your team.`
+        });
+      }
+
+      const frag = document.createDocumentFragment();
+      for (const item of insights.slice(0, 4)) {
+        const card = document.createElement('div');
+        card.className = 'surface-solid rounded-3xl p-5';
+
+        const accent = item.tone === 'good'
+          ? 'rgba(16,185,129,0.18)'
+          : item.tone === 'warn'
+            ? 'rgba(245,158,11,0.20)'
+            : 'rgba(37,99,235,0.18)';
+
+        card.style.border = `1px solid ${accent}`;
+        card.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-2xl flex items-center justify-center" style="background: ${accent}">
+              <i class="fa-solid ${item.tone === 'good' ? 'fa-circle-check' : item.tone === 'warn' ? 'fa-triangle-exclamation' : 'fa-wand-magic-sparkles'}" style="color: var(--text);"></i>
+            </div>
+            <div>
+              <div class="font-semibold">${item.title}</div>
+              <div class="text-sm mt-1" style="color: var(--muted);">${item.body}</div>
+            </div>
+          </div>
+        `;
+        frag.appendChild(card);
+      }
+      DOM.insightsList.replaceChildren(frag);
+    }
+
+    function renderPerformance() {
+      const items = DashboardState.data.performance;
+      const container = DOM.chartContainer;
+
+      const avg = items.reduce((s, i) => s + i.value, 0) / Math.max(1, items.length);
+      setText(DOM.chartMeta, `Avg: ${Math.round(avg)}`);
+
+      const max = Math.max(...items.map(i => i.value), 1);
+      const frag = document.createDocumentFragment();
+
+      for (const item of items) {
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center justify-end h-full min-w-0';
+
+        const bar = document.createElement('div');
+        bar.className = 'bar w-8 sm:w-10 rounded-2xl';
+        bar.style.height = '0%';
+        bar.style.background = item.trend === 'up'
+          ? 'linear-gradient(180deg, rgba(16,185,129,0.95), rgba(16,185,129,0.55))'
+          : 'linear-gradient(180deg, rgba(239,68,68,0.92), rgba(239,68,68,0.52))';
+        bar.style.border = '1px solid rgba(148,163,184,0.20)';
+        bar.setAttribute('data-tip', `${item.label}: ${item.value}`);
+
+        const label = document.createElement('div');
+        label.className = 'mt-2 text-xs';
+        label.style.color = 'var(--muted)';
+        label.textContent = item.label;
+
+        col.appendChild(bar);
+        col.appendChild(label);
+        frag.appendChild(col);
+
+        const height = (item.value / max) * 86;
+        requestAnimationFrame(() => { bar.style.height = `${height}%`; });
+      }
+
+      container.replaceChildren(frag);
+    }
+
+    function renderCategoryDistribution() {
+      const dist = DashboardState.data.categories;
+      const container = DOM.categoryDistribution;
+
+      const total = dist.reduce((s, c) => s + c.value, 0);
+      setText(DOM.totalItems, total.toLocaleString());
+
+      const frag = document.createDocumentFragment();
+      for (const c of dist) {
+        const pct = total === 0 ? 0 : Math.round((c.value / total) * 100);
+        const row = document.createElement('div');
+        row.className = 'fade-in';
+        row.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" style="background: ${c.color}"></span>
+              <span class="font-medium">${c.name}</span>
+            </div>
+            <div class="text-sm" style="color: var(--muted);">${c.value} <span class="text-xs">(${pct}%)</span></div>
+          </div>
+          <div class="w-full rounded-full" style="background: rgba(148,163,184,0.18); height: 10px; border: 1px solid rgba(148,163,184,0.14);">
+            <div class="rounded-full" style="height: 10px; width: 0%; background: linear-gradient(90deg, ${c.color}, rgba(255,255,255,0.0));"></div>
+          </div>
+        `;
+
+        frag.appendChild(row);
+        requestAnimationFrame(() => {
+          const bar = row.querySelector('div[style*="width: 0%"]');
+          if (bar) bar.style.width = `${pct}%`;
+        });
+      }
+      container.replaceChildren(frag);
+    }
+
+    function renderActivityTable() {
+      const rows = DashboardState.data.view.pagedActivities;
+      const body = DOM.activityTable;
+
+      if (!rows.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-10 text-center" style="color: var(--muted);">
+              No activities match your filters. Try widening categories or clearing the search.
+            </td>
+          </tr>
+        `;
+        setText(DOM.shownActivities, '0');
+        setText(DOM.totalActivities, String(DashboardState.data.view.filteredActivities.length));
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      for (const a of rows) {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(148,163,184,0.18)';
+
+        const initials = a.user.split(' ').slice(0,2).map(s => s[0]).join('').toUpperCase();
+        const icon = actionIcon(a.action);
+        const badge = categoryBadge(a.category);
+
+        tr.innerHTML = `
+          <td class="py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl flex items-center justify-center" style="background: rgba(148,163,184,0.18); border: 1px solid rgba(148,163,184,0.18);">
+                <span class="text-sm font-semibold" style="color: var(--text);">${initials}</span>
+              </div>
+              <div>
+                <div class="font-medium">${escapeHtml(a.user)}</div>
+                <div class="text-xs" style="color: var(--muted);">ID: ${a.id}</div>
+              </div>
+            </div>
+          </td>
+          <td class="py-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid ${icon.name}" style="color: ${icon.color}"></i>
+              <span>${escapeHtml(a.action)}</span>
+            </div>
+          </td>
+          <td class="py-4">${badge}</td>
+          <td class="py-4 font-medium">${escapeHtml(a.value)}</td>
+          <td class="py-4" style="color: var(--muted);">${escapeHtml(a.time)}</td>
+          <td class="py-4">
+            <button class="btn-edit btn lift px-3 py-2 rounded-xl" data-id="${a.id}" title="Edit">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+          </td>
+        `;
+
+        frag.appendChild(tr);
+      }
+
+      body.replaceChildren(frag);
+      setText(DOM.shownActivities, String(rows.length));
+      setText(DOM.totalActivities, String(DashboardState.data.view.filteredActivities.length));
+    }
+
+    function renderPagination() {
+      const p = DashboardState.data.pagination;
+      const totalPages = Math.max(1, Math.ceil(p.totalItems / p.pageSize));
+
+      DOM.prevPage.disabled = p.currentPage <= 1;
+      DOM.nextPage.disabled = p.currentPage >= totalPages;
+
+      setText(DOM.pageNum, String(p.currentPage));
+      setText(DOM.pageTotal, String(totalPages));
+    }
+
+    function renderQuickStats() {
+      const s = DashboardState.data.summary;
+      setText(DOM.quickDataPoints, s.dataPoints.toLocaleString());
+      setText(DOM.quickActiveUsers, s.activeUsers.toLocaleString());
+      setText(DOM.quickAvgSession, s.avgSession);
+      setText(DOM.quickCompletion, `${s.completionRate}%`);
+
+      if (DOM.quickDataPointsMobile) setText(DOM.quickDataPointsMobile, s.dataPoints.toLocaleString());
+      if (DOM.quickActiveUsersMobile) setText(DOM.quickActiveUsersMobile, s.activeUsers.toLocaleString());
+      if (DOM.quickAvgSessionMobile) setText(DOM.quickAvgSessionMobile, s.avgSession);
+      if (DOM.quickCompletionMobile) setText(DOM.quickCompletionMobile, `${s.completionRate}%`);
+    }
+
+    function categoryBadge(name) {
+      const map = {
+        Sales: { bg: 'rgba(37,99,235,0.16)', border: 'rgba(37,99,235,0.22)' },
+        Marketing: { bg: 'rgba(16,185,129,0.16)', border: 'rgba(16,185,129,0.22)' },
+        Operations: { bg: 'rgba(168,85,247,0.16)', border: 'rgba(168,85,247,0.22)' },
+        Support: { bg: 'rgba(245,158,11,0.16)', border: 'rgba(245,158,11,0.26)' }
+      };
+      const s = map[name] || { bg: 'rgba(148,163,184,0.16)', border: 'rgba(148,163,184,0.18)' };
+      return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold" style="background:${s.bg}; border: 1px solid ${s.border}; color: var(--text);">${name}</span>`;
+    }
+
+    function actionIcon(action) {
+      switch (action) {
+        case 'Purchase': return { name: 'fa-cart-shopping', color: 'var(--success)' };
+        case 'Login': return { name: 'fa-right-to-bracket', color: 'var(--accent)' };
+        case 'Download': return { name: 'fa-download', color: '#a855f7' };
+        case 'Upload': return { name: 'fa-upload', color: 'var(--warning)' };
+        case 'Resolve': return { name: 'fa-circle-check', color: 'var(--success)' };
+        case 'Approve': return { name: 'fa-thumbs-up', color: 'var(--accent-2)' };
+        default: return { name: 'fa-circle', color: 'rgba(148,163,184,0.9)' };
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    // Interactions
+    function applyFilters({ dateRange, categories }) {
+      DashboardState.filters.dateRange = dateRange;
+      DashboardState.filters.categories = new Set(categories);
+      DashboardState.data.pagination.currentPage = 1;
+
+      setLoading(true);
+      scheduleRender();
+
+      setTimeout(() => {
+        generateData();
+        setLoading(false);
+        scheduleRender();
+        toast(`Filters applied · ${humanDateRange(dateRange)} · ${categories.length} categories`);
+      }, 420);
+    }
+
+    function resetFilters() {
+      DashboardState.filters.dateRange = 'week';
+      DashboardState.filters.categories = new Set(['sales','marketing','operations','support']);
+      DashboardState.data.pagination.currentPage = 1;
+      DashboardState.ui.searchTerm = '';
+
+      if (DOM.dateRange) DOM.dateRange.value = 'week';
+      if (DOM.dateRangeMobile) DOM.dateRangeMobile.value = 'week';
+      if (DOM.search) DOM.search.value = '';
+
+      syncCategoryInputs(['sales','marketing','operations','support']);
+
+      setLoading(true);
+      scheduleRender();
+      setTimeout(() => {
+        generateData();
+        setLoading(false);
+        scheduleRender();
+        toast('Filters reset');
+      }, 360);
+    }
+
+    function humanDateRange(v) {
+      const map = { today:'Today', yesterday:'Yesterday', week:'This week', month:'This month', quarter:'This quarter', year:'This year' };
+      return map[v] || v;
+    }
+
+    function refresh() {
+      setLoading(true);
+      scheduleRender();
+      setTimeout(() => {
+        generateData();
+        setLoading(false);
+        scheduleRender();
+        toast('Data refreshed');
+      }, 640);
+    }
+
+    function toast(message) {
+      const el = document.createElement('div');
+      el.className = 'toast fixed bottom-4 left-1/2 z-[999] px-4 py-2 rounded-xl shadow-lg transform translate-y-6 opacity-0 transition-all duration-300';
+      el.textContent = message;
+      document.body.appendChild(el);
+      requestAnimationFrame(() => {
+        el.style.transform = 'translate(-50%, 0)';
+        el.style.opacity = '1';
+      });
+      setTimeout(() => {
+        el.style.transform = 'translate(-50%, 1.5rem)';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 2600);
+    }
+
+    function exportCurrentPageToCSV() {
+      const rows = DashboardState.data.view.pagedActivities;
+      if (!rows.length) return toast('Nothing to export');
+
+      const headers = ['id', 'user', 'action', 'category', 'value', 'time'];
+      const csv = [headers.join(',')]
+        .concat(rows.map(r => headers.map(h => csvEscape(r[h] ?? '')).join(',')))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `insightx-activity-page-${DashboardState.data.pagination.currentPage}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast('Exported CSV');
+    }
+
+    function csvEscape(value) {
+      const v = String(value).replaceAll('"', '""');
+      return `"${v}"`;
+    }
+
+    function toggleTheme() {
+      const next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+      toast(`Theme: ${next}`);
+    }
+
+    function setTheme(theme) {
+      DashboardState.ui.theme = theme;
+      document.body.dataset.theme = theme;
+      localStorage.setItem('insightx:theme', theme);
+
+      if (DOM.themeIcon) {
+        DOM.themeIcon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      }
+      if (DOM.themeToggle) {
+        DOM.themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+      }
+    }
+
+    let lastFocusEl = null;
+
+    function setScrollLock(locked) {
+      document.documentElement.style.overflow = locked ? 'hidden' : '';
+    }
+
+    function openHelp(open) {
+      if (open) lastFocusEl = document.activeElement;
+      DOM.helpModal.classList.toggle('hidden', !open);
+      DOM.helpModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+      setScrollLock(open);
+      if (open) DOM.closeHelp.focus();
+      else if (lastFocusEl && typeof lastFocusEl.focus === 'function') lastFocusEl.focus();
+    }
+
+    function openMobileFilters(open) {
+      if (open) lastFocusEl = document.activeElement;
+      DOM.mobileFilters.classList.toggle('hidden', !open);
+      DOM.mobileFilters.setAttribute('aria-hidden', open ? 'false' : 'true');
+      setScrollLock(open);
+      if (open) DOM.closeMobileFilters.focus();
+      else if (lastFocusEl && typeof lastFocusEl.focus === 'function') lastFocusEl.focus();
+    }
+
+    function openEditModal(open, activityId = null) {
+      if (open) {
+        lastFocusEl = document.activeElement;
+        
+        if (activityId) {
+          const activity = DashboardState.data.activities.find(a => a.id === parseInt(activityId));
+          if (activity) {
+            DOM.editId.value = activity.id;
+            DOM.editUser.value = activity.user;
+            DOM.editAction.value = activity.action;
+            DOM.editCategory.value = activity.category;
+            DOM.editValue.value = activity.value;
+          }
+        }
+      }
+      
+      DOM.editModal.classList.toggle('hidden', !open);
+      DOM.editModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+      setScrollLock(open);
+      
+      if (open) {
+        DOM.editUser.focus();
+      } else if (lastFocusEl && typeof lastFocusEl.focus === 'function') {
+        lastFocusEl.focus();
+      }
+    }
+
+    function saveEditedActivity(e) {
+      e.preventDefault();
+      
+      const id = parseInt(DOM.editId.value);
+      const activity = DashboardState.data.activities.find(a => a.id === id);
+      
+      if (activity) {
+        activity.user = DOM.editUser.value;
+        activity.action = DOM.editAction.value;
+        activity.category = DOM.editCategory.value;
+        activity.value = DOM.editValue.value;
+        
+        scheduleRender();
+        openEditModal(false);
+        toast('Activity updated successfully');
+      }
+    }
+
+    function readSelectedCategories(root = document) {
+      return $$('input[name="category"]', root).filter(i => i.checked).map(i => i.value);
+    }
+
+    function syncCategoryInputs(values) {
+      for (const input of $$('input[name="category"]')) {
+        input.checked = values.includes(input.value);
+      }
+      rebuildMobileCategoryChips();
+    }
+
+    function rebuildMobileCategoryChips() {
+      const host = DOM.mobileCategoryChips;
+      if (!host) return;
+      const desktopInputs = $$('aside input[name="category"]');
+      const frag = document.createDocumentFragment();
+      for (const input of desktopInputs) {
+        const key = input.value;
+        const label = key[0].toUpperCase() + key.slice(1);
+
+        const wrapper = document.createElement('label');
+        wrapper.className = 'cursor-pointer';
+        wrapper.innerHTML = `
+          <input class="sr-only" type="checkbox" name="category" value="${key}" ${input.checked ? 'checked' : ''} />
+          <span class="chip inline-flex items-center gap-2 px-3 py-2 rounded-2xl" style="background: rgba(148,163,184,0.14); border: 1px solid var(--border);">
+            <span class="text-sm">${label}</span>
+          </span>
+        `;
+        frag.appendChild(wrapper);
+      }
+      host.replaceChildren(frag);
+      syncMobileChipStyles();
+    }
+
+    function syncMobileChipStyles() {
+      const mapStyle = {
+        sales: { bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.20)' },
+        marketing: { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.20)' },
+        operations: { bg: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.20)' },
+        support: { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.22)' }
+      };
+      for (const label of $$('#mobile-category-chips label')) {
+        const input = $('input', label);
+        const pill = $('span', label);
+        if (!input || !pill) continue;
+        const st = mapStyle[input.value];
+        const isOn = input.checked;
+        pill.style.background = isOn ? st.bg : 'rgba(148,163,184,0.10)';
+        pill.style.borderColor = isOn ? st.border : 'rgba(148,163,184,0.18)';
+        pill.style.color = 'var(--text)';
+      }
+    }
+
+    // Init
+    function cacheDOM() {
+      DOM.lastUpdated = $('#last-updated');
+      DOM.statusDot = $('#status-dot');
+      DOM.refreshBtn = $('#refresh-btn');
+      DOM.helpBtn = $('#help-btn');
+      DOM.themeToggle = $('#theme-toggle');
+      DOM.themeIcon = $('#theme-icon');
+      DOM.exportBtn = $('#export-btn');
+      DOM.exportBtnSm = $('#export-btn-sm');
+
+      DOM.search = $('#search');
+      DOM.clearSearch = $('#clear-search');
+
+      DOM.dateRange = $('#date-range');
+      DOM.applyFilters = $('#apply-filters');
+      DOM.resetFilters = $('#reset-filters');
+      DOM.selectAll = $('#select-all');
+
+      DOM.mobileFiltersBtn = $('#mobile-filters-btn');
+      DOM.mobileFilters = $('#mobile-filters');
+      DOM.closeMobileFilters = $('#close-mobile-filters');
+      DOM.dateRangeMobile = $('#date-range-mobile');
+      DOM.applyFiltersMobile = $('#apply-filters-mobile');
+      DOM.resetFiltersMobile = $('#reset-filters-mobile');
+      DOM.selectAllMobile = $('#select-all-mobile');
+      DOM.mobileCategoryChips = $('#mobile-category-chips');
+
+      DOM.quickDataPoints = $('#quick-data-points');
+      DOM.quickActiveUsers = $('#quick-active-users');
+      DOM.quickAvgSession = $('#quick-avg-session');
+      DOM.quickCompletion = $('#quick-completion');
+      DOM.quickDataPointsMobile = $('#quick-data-points-mobile');
+      DOM.quickActiveUsersMobile = $('#quick-active-users-mobile');
+      DOM.quickAvgSessionMobile = $('#quick-avg-session-mobile');
+      DOM.quickCompletionMobile = $('#quick-completion-mobile');
+
+      DOM.totalRevenue = $('#total-revenue');
+      DOM.activeUsers = $('#active-users');
+      DOM.conversionRate = $('#conversion-rate');
+      DOM.revDelta = $('#rev-delta');
+      DOM.usersDelta = $('#users-delta');
+      DOM.convDelta = $('#conv-delta');
+
+      DOM.sparkRevenue = $('#spark-revenue');
+      DOM.sparkUsers = $('#spark-users');
+      DOM.sparkConv = $('#spark-conv');
+
+      DOM.insights = $('#insights');
+      DOM.insightsList = $('#insights-list');
+      DOM.dismissInsights = $('#dismiss-insights');
+
+      DOM.chartContainer = $('#chart-container');
+      DOM.chartMeta = $('#chart-meta');
+      DOM.trendGranularity = $('#trend-granularity');
+      DOM.categoryDistribution = $('#category-distribution');
+      DOM.totalItems = $('#total-items');
+
+      DOM.activityTable = $('#activity-table');
+      DOM.shownActivities = $('#shown-activities');
+      DOM.totalActivities = $('#total-activities');
+      DOM.prevPage = $('#prev-page');
+      DOM.nextPage = $('#next-page');
+      DOM.pageNum = $('#page-num');
+      DOM.pageTotal = $('#page-total');
+
+      DOM.helpModal = $('#help-modal');
+      DOM.closeHelp = $('#close-help');
+      DOM.gotIt = $('#got-it');
+
+      DOM.editModal = $('#edit-modal');
+      DOM.closeEdit = $('#close-edit');
+      DOM.cancelEdit = $('#cancel-edit');
+      DOM.editForm = $('#edit-form');
+      DOM.editId = $('#edit-id');
+      DOM.editUser = $('#edit-user');
+      DOM.editAction = $('#edit-action');
+      DOM.editCategory = $('#edit-category');
+      DOM.editValue = $('#edit-value');
+
+      DOM.year = $('#current-year');
+    }
+
+    function setupEvents() {
+      DOM.refreshBtn.addEventListener('click', refresh);
+
+      if (DOM.exportBtn) DOM.exportBtn.addEventListener('click', exportCurrentPageToCSV);
+      if (DOM.exportBtnSm) DOM.exportBtnSm.addEventListener('click', exportCurrentPageToCSV);
+
+      DOM.themeToggle.addEventListener('click', toggleTheme);
+
+      DOM.helpBtn.addEventListener('click', () => openHelp(true));
+      DOM.closeHelp.addEventListener('click', () => openHelp(false));
+      DOM.gotIt.addEventListener('click', () => openHelp(false));
+
+      DOM.dismissInsights.addEventListener('click', () => {
+        DashboardState.ui.insightsDismissed = true;
+        scheduleRender();
+        toast('Insights dismissed');
+      });
+
+      const onSearch = debounce(() => {
+        DashboardState.ui.searchTerm = DOM.search.value;
+        DashboardState.data.pagination.currentPage = 1;
+        scheduleRender();
+      }, 120);
+      DOM.search.addEventListener('input', onSearch);
+      DOM.clearSearch.addEventListener('click', () => {
+        DOM.search.value = '';
+        DashboardState.ui.searchTerm = '';
+        DashboardState.data.pagination.currentPage = 1;
+        scheduleRender();
+        DOM.search.focus();
+        toast('Search cleared');
+      });
+
+      DOM.dateRange.addEventListener('change', () => markFiltersDirty(true));
+      DOM.dateRangeMobile.addEventListener('change', () => markFiltersDirty(true));
+
+      document.addEventListener('change', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLInputElement)) return;
+        if (t.name !== 'category') return;
+
+        const isMobile = Boolean(t.closest('#mobile-category-chips'));
+        const selectedInSource = readSelectedCategories(isMobile ? DOM.mobileFilters : document);
+        if (selectedInSource.length === 0) {
+          t.checked = true;
+          toast('Select at least one category');
+          return;
+        }
+
+        if (isMobile) {
+          for (const desktopInput of $$('aside input[name="category"]')) {
+            desktopInput.checked = selectedInSource.includes(desktopInput.value);
+          }
+          syncMobileChipStyles();
+        }
+
+        markFiltersDirty(true);
+      });
+
+      DOM.selectAll.addEventListener('click', (e) => {
+        e.preventDefault();
+        for (const input of $$('aside input[name="category"]')) input.checked = true;
+        if (!DOM.mobileFilters.classList.contains('hidden')) {
+          for (const input of $$('#mobile-category-chips input[name="category"]')) input.checked = true;
+          syncMobileChipStyles();
+        }
+        markFiltersDirty(true);
+        toast('All categories selected');
+      });
+      DOM.selectAllMobile.addEventListener('click', (e) => {
+        e.preventDefault();
+        for (const input of $$('#mobile-category-chips input[name="category"]')) input.checked = true;
+        syncMobileChipStyles();
+        for (const desktopInput of $$('aside input[name="category"]')) desktopInput.checked = true;
+        markFiltersDirty(true);
+        toast('All categories selected');
+      });
+
+      DOM.applyFilters.addEventListener('click', () => {
+        const dateRange = DOM.dateRange.value;
+        const categories = readSelectedCategories(document);
+        applyFilters({ dateRange, categories });
+        markFiltersDirty(false);
+      });
+      DOM.resetFilters.addEventListener('click', () => {
+        resetFilters();
+        markFiltersDirty(false);
+      });
+
+      DOM.applyFiltersMobile.addEventListener('click', () => {
+        const dateRange = DOM.dateRangeMobile.value;
+        const categories = readSelectedCategories(DOM.mobileFilters);
+        DOM.dateRange.value = dateRange;
+        syncCategoryInputs(categories);
+        applyFilters({ dateRange, categories });
+        markFiltersDirty(false);
+        openMobileFilters(false);
+      });
+      DOM.resetFiltersMobile.addEventListener('click', () => {
+        resetFilters();
+        markFiltersDirty(false);
+        openMobileFilters(false);
+      });
+
+      DOM.mobileFiltersBtn.addEventListener('click', () => {
+        DOM.dateRangeMobile.value = DOM.dateRange.value;
+        rebuildMobileCategoryChips();
+        openMobileFilters(true);
+      });
+      DOM.closeMobileFilters.addEventListener('click', () => openMobileFilters(false));
+
+      DOM.prevPage.addEventListener('click', () => {
+        DashboardState.data.pagination.currentPage--;
+        scheduleRender();
+        toast('Previous page');
+      });
+      DOM.nextPage.addEventListener('click', () => {
+        DashboardState.data.pagination.currentPage++;
+        scheduleRender();
+        toast('Next page');
+      });
+
+      DOM.trendGranularity.addEventListener('change', () => {
+        DashboardState.ui.granularity = DOM.trendGranularity.value;
+        setLoading(true);
+        scheduleRender();
+        setTimeout(() => {
+          generateData();
+          setLoading(false);
+          scheduleRender();
+        }, 280);
+        toast(`Granularity: ${DOM.trendGranularity.value}`);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+          e.preventDefault();
+          refresh();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+          e.preventDefault();
+          DOM.search.focus();
+        }
+        if (e.key === 'Escape') {
+          if (!DOM.helpModal.classList.contains('hidden')) openHelp(false);
+          if (!DOM.mobileFilters.classList.contains('hidden')) openMobileFilters(false);
+          if (!DOM.editModal.classList.contains('hidden')) openEditModal(false);
+        }
+      });
+
+      DOM.helpModal.addEventListener('click', (e) => {
+        if (e.target === DOM.helpModal.querySelector('.absolute.inset-0')) openHelp(false);
+      });
+      DOM.mobileFilters.addEventListener('click', (e) => {
+        if (e.target === DOM.mobileFilters.querySelector('.absolute.inset-0')) openMobileFilters(false);
+      });
+
+      // Edit modal events
+      DOM.editForm.addEventListener('submit', saveEditedActivity);
+      DOM.closeEdit.addEventListener('click', () => openEditModal(false));
+      DOM.cancelEdit.addEventListener('click', () => openEditModal(false));
+      
+      DOM.editModal.addEventListener('click', (e) => {
+        if (e.target === DOM.editModal.querySelector('.absolute.inset-0')) openEditModal(false);
+      });
+
+      // Event delegation for edit buttons
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-edit')) {
+          const btn = e.target.closest('.btn-edit');
+          const id = btn.dataset.id;
+          openEditModal(true, id);
+          toast('Edit mode opened');
+        }
+      });
+    }
+
+    function markFiltersDirty(isDirty) {
+      const btns = [DOM.applyFilters, DOM.applyFiltersMobile].filter(Boolean);
+      for (const btn of btns) {
+        btn.style.filter = isDirty ? 'saturate(1.08)' : 'none';
+        btn.style.boxShadow = isDirty ? '0 18px 36px rgba(37,99,235,0.28)' : '';
+      }
+
+      const pill = document.getElementById('filters-pill');
+      if (pill) {
+        if (isDirty) {
+          pill.textContent = 'Pending';
+          pill.style.background = 'rgba(245,158,11,0.14)';
+          pill.style.borderColor = 'rgba(245,158,11,0.26)';
+        } else {
+          pill.textContent = 'Live';
+          pill.style.background = 'rgba(37,99,235,0.12)';
+          pill.style.borderColor = 'rgba(37,99,235,0.18)';
+        }
+      }
+    }
+
+    function debounce(fn, wait) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), wait);
+      };
+    }
+
+    function init() {
+      cacheDOM();
+
+      setText(DOM.year, new Date().getFullYear());
+
+      const saved = localStorage.getItem('insightx:theme');
+      setTheme(saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+      rebuildMobileCategoryChips();
+
+      generateData();
+      computeViews();
+
+      setupEvents();
+
+      render();
+
+      setInterval(() => {
+        setText(DOM.lastUpdated, timeAgo(DashboardState.ui.lastUpdated));
+      }, 30000);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
