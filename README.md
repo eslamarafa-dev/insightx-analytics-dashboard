@@ -1,5 +1,14 @@
 # 🎯 InsightX - Analytics Dashboard
 
+A premium, real-time analytics dashboard built with **pure Vanilla JavaScript** (no frameworks, no chart libraries). InsightX helps teams visualize and understand operational data clearly with a modern, performance-conscious UI.
+
+![InsightX Dashboard](https://img.shields.io/badge/InsightX-Analytics%20Dashboard-blue?style=for-the-badge&logo=analytics)
+![Pure JS](https://img.shields.io/badge/Pure%20Vanilla-JavaScript-yellow?style=for-the-badge&logo=javascript)
+![No Frameworks](https://img.shields.io/badge/No-Frameworks-green?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
+
+
+
 GO Live Preview : https://eslamarafa-dev.github.io/insightx-analytics-dashboard/
 
 
@@ -15,12 +24,6 @@ GO Live Preview : https://eslamarafa-dev.github.io/insightx-analytics-dashboard/
 <img width="1920" height="877" alt="4" src="https://github.com/user-attachments/assets/ee42c58f-86ae-4ad5-acf1-3370eb6814c1" />
 
 
-A premium, real-time analytics dashboard built with **pure Vanilla JavaScript** (no frameworks, no chart libraries). InsightX helps teams visualize and understand operational data clearly with a modern, performance-conscious UI.
-
-![InsightX Dashboard](https://img.shields.io/badge/InsightX-Analytics%20Dashboard-blue?style=for-the-badge&logo=analytics)
-![Pure JS](https://img.shields.io/badge/Pure%20Vanilla-JavaScript-yellow?style=for-the-badge&logo=javascript)
-![No Frameworks](https://img.shields.io/badge/No-Frameworks-green?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
 
 ---
 
