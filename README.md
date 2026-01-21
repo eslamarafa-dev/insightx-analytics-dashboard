@@ -3,6 +3,18 @@
 GO Live Preview : https://eslamarafa-dev.github.io/insightx-analytics-dashboard/
 
 
+<img width="1920" height="881" alt="1" src="https://github.com/user-attachments/assets/8decc0b2-909d-48f8-a419-c65163e8303b" />
+
+
+<img width="1920" height="877" alt="2" src="https://github.com/user-attachments/assets/a66ecd76-9041-4a8c-afab-461125bb7888" />
+
+
+<img width="1920" height="877" alt="3" src="https://github.com/user-attachments/assets/0c74bae5-1293-4aa3-b53b-2fa3c29b7408" />
+
+
+<img width="1920" height="877" alt="4" src="https://github.com/user-attachments/assets/ee42c58f-86ae-4ad5-acf1-3370eb6814c1" />
+
+
 A premium, real-time analytics dashboard built with **pure Vanilla JavaScript** (no frameworks, no chart libraries). InsightX helps teams visualize and understand operational data clearly with a modern, performance-conscious UI.
 
 ![InsightX Dashboard](https://img.shields.io/badge/InsightX-Analytics%20Dashboard-blue?style=for-the-badge&logo=analytics)
